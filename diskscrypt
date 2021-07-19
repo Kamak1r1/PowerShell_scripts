@@ -1,0 +1,34 @@
+# Инфо о физических дисках
+$PhysicalDiskInfo = Get-PhysicalDisk | Sort-Object DeviceId | ft -AutoSize DeviceId,Model,MediaType,BusType,Size
+
+$DiskInfo = Get-Disk | Sort-Object Number | ForEach-Object {
+	# Инфо о диске
+	$_ | Format-Table -AutoSize `
+		@{Expression = {$_.Number}; Label = "Диск"},
+		@{Expression = {$_.FriendlyName}; Label = "Название"},
+		@{Expression = {$_.SerialNumber}; Label = "Серийный номер"},
+		@{Expression = {$_.Size}; Label = "Размер"},
+		@{Expression = {$_.PartitionStyle}; Label = "Разметка"}
+		
+	# Инфо о разделах диска
+	Get-Partition -DiskNumber $_.Number | Format-Table -AutoSize `
+		@{Expression = {$_.PartitionNumber}; Label = "Раздел"},
+		@{Expression = {$_.DriveLetter}; Label = "Буква"},
+		@{Expression = {$_.IsBoot}; Label = "Загрузочный"},
+		@{Expression = {$_.IsSystem}; Label = "Системный"},
+		@{Expression = {$_.Type}; Label = "Тип"},
+		@{Expression = {$_.Size}; Label = "Размер"},
+		@{Expression = {[int]($_.Size/1GB)}; Label = "Размер(ГБ)"},
+		@{Expression = {$_.Offset}; Label = "Смещение"}
+}
+
+#Записываем отчет в файл
+Remove-Item -Path "$PSScriptRoot\disk-info.txt" -ErrorAction SilentlyContinue
+
+$Report = "$PSScriptRoot\disk-info.txt"
+
+'Физические диски' | Out-File $Report -append
+$PhysicalDiskInfo | Out-File $Report -append
+
+'Диски и разделы' | Out-File $Report -append
+$DiskInfo | Out-File $Report -append
